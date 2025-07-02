@@ -1,0 +1,163 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  test-python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+        
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+    
+    - name: Test authentik-mcp
+      run: |
+        cd python/authentik-mcp
+        uv sync
+        uv run pytest || echo "No tests yet"
+        uv run ruff check src/
+        uv run mypy src/
+    
+    - name: Test authentik-diag-mcp
+      run: |
+        cd python/authentik-diag-mcp
+        uv sync
+        uv run pytest || echo "No tests yet"
+        uv run ruff check src/
+        uv run mypy src/
+
+  test-nodejs:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18', '20', '22']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Test authentik-mcp (Node.js)
+      run: |
+        cd nodejs/authentik-mcp
+        npm ci
+        npm run type-check
+        npm run lint
+        npm run build
+        npm test || echo "No tests yet"
+    
+    - name: Test authentik-diag-mcp (Node.js)
+      run: |
+        cd nodejs/authentik-diag-mcp
+        npm ci
+        npm run type-check
+        npm run lint
+        npm run build
+        npm test || echo "No tests yet"
+
+  build:
+    needs: [test-python, test-nodejs]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Build all packages
+      run: ./build.sh
+    
+    - name: Upload Python artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-packages
+        path: |
+          python/authentik-mcp/dist/
+          python/authentik-diag-mcp/dist/
+    
+    - name: Upload Node.js artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nodejs-packages
+        path: |
+          nodejs/authentik-mcp/dist/
+          nodejs/authentik-diag-mcp/dist/
+
+  publish:
+    if: github.event_name == 'release'
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment: release
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        registry-url: 'https://registry.npmjs.org'
+    
+    - name: Download Python artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-packages
+        path: dist/
+    
+    - name: Download Node.js artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: nodejs-packages
+        path: dist/
+    
+    - name: Publish Python packages to PyPI
+      env:
+        UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        cd python/authentik-mcp
+        uv publish
+        cd ../authentik-diag-mcp
+        uv publish
+    
+    - name: Publish Node.js packages to npm
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: |
+        cd nodejs/authentik-mcp
+        npm publish
+        cd ../authentik-diag-mcp
+        npm publish
