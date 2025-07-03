@@ -442,7 +442,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   const { name, arguments: args } = request.params;
-  
+
   // Ensure args is defined
   if (!args) {
     throw new Error('Missing arguments in tool call');

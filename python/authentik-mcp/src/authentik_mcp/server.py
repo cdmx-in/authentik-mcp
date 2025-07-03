@@ -33,14 +33,14 @@ from mcp.types import (
     TextContent,
     Tool,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AnyUrl
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("authentik-mcp")
 
 # Initialize MCP server
-server = Server("authentik-mcp")
+server: Server = Server("authentik-mcp")
 
 
 class AuthentikConfig(BaseModel):
@@ -80,7 +80,8 @@ class AuthentikClient:
                 json=json_data,
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            return result if isinstance(result, dict) else {"data": result}
         except httpx.HTTPStatusError as e:
             logger.exception(f"HTTP error {e.response.status_code}: {e.response.text}")
             raise
@@ -97,42 +98,42 @@ class AuthentikClient:
 authentik_client: AuthentikClient | None = None
 
 
-@server.list_resources()
+@server.list_resources()  # type: ignore[misc]
 async def list_resources() -> list[Resource]:
     """List available Authentik resources."""
     return [
         Resource(
-            uri="authentik://users",
+            uri=AnyUrl("authentik://users"),
             name="Users",
             mimeType="application/json",
             description="List and manage Authentik users",
         ),
         Resource(
-            uri="authentik://groups",
+            uri=AnyUrl("authentik://groups"),
             name="Groups",
             mimeType="application/json",
             description="List and manage Authentik groups",
         ),
         Resource(
-            uri="authentik://applications",
+            uri=AnyUrl("authentik://applications"),
             name="Applications",
             mimeType="application/json",
             description="List and manage Authentik applications",
         ),
         Resource(
-            uri="authentik://events",
+            uri=AnyUrl("authentik://events"),
             name="Events",
             mimeType="application/json",
             description="View Authentik system events and audit logs",
         ),
         Resource(
-            uri="authentik://flows",
+            uri=AnyUrl("authentik://flows"),
             name="Flows",
             mimeType="application/json",
             description="List and manage Authentik authentication flows",
         ),
         Resource(
-            uri="authentik://providers",
+            uri=AnyUrl("authentik://providers"),
             name="Providers",
             mimeType="application/json",
             description="List and manage Authentik providers",
@@ -140,7 +141,7 @@ async def list_resources() -> list[Resource]:
     ]
 
 
-@server.read_resource()
+@server.read_resource()  # type: ignore[misc]
 async def read_resource(uri: str) -> str:
     """Read a specific Authentik resource."""
     if not authentik_client:
@@ -169,7 +170,7 @@ async def read_resource(uri: str) -> str:
     raise ValueError(msg)
 
 
-@server.list_tools()
+@server.list_tools()  # type: ignore[misc]
 async def list_tools() -> list[Tool]:
     """List available Authentik tools."""
     return [
@@ -506,7 +507,7 @@ async def list_tools() -> list[Tool]:
     ]
 
 
-@server.call_tool()
+@server.call_tool()  # type: ignore[misc]
 async def call_tool(name: str, arguments: dict[str, Any]) -> Sequence[TextContent]:
     """Handle tool calls for Authentik operations."""
     if not authentik_client:
@@ -674,8 +675,8 @@ async def main() -> None:
                     server_name="authentik-mcp",
                     server_version="0.1.0",
                     capabilities=server.get_capabilities(
-                        notification_options=None,
-                        experimental_capabilities=None,
+                        notification_options=None,  # type: ignore[arg-type]
+                        experimental_capabilities=None,  # type: ignore[arg-type]
                     ),
                 ),
             )
