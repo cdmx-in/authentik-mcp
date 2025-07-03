@@ -40,7 +40,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("authentik-mcp")
 
 # Initialize MCP server
-server: Server = Server("authentik-mcp")
+server: Server[None] = Server("authentik-mcp")
 
 
 class AuthentikConfig(BaseModel):
@@ -98,7 +98,7 @@ class AuthentikClient:
 authentik_client: AuthentikClient | None = None
 
 
-@server.list_resources()  # type: ignore[misc]
+@server.list_resources()  # type: ignore[no-untyped-call,misc]
 async def list_resources() -> list[Resource]:
     """List available Authentik resources."""
     return [
@@ -141,7 +141,7 @@ async def list_resources() -> list[Resource]:
     ]
 
 
-@server.read_resource()  # type: ignore[misc]
+@server.read_resource()  # type: ignore[no-untyped-call,misc]
 async def read_resource(uri: str) -> str:
     """Read a specific Authentik resource."""
     if not authentik_client:
@@ -170,7 +170,7 @@ async def read_resource(uri: str) -> str:
     raise ValueError(msg)
 
 
-@server.list_tools()  # type: ignore[misc]
+@server.list_tools()  # type: ignore[no-untyped-call,misc]
 async def list_tools() -> list[Tool]:
     """List available Authentik tools."""
     return [

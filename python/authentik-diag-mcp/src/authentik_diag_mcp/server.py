@@ -30,14 +30,14 @@ from mcp.types import (
     TextContent,
     Tool,
 )
-from pydantic import BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("authentik-diag-mcp")
 
 # Initialize MCP server
-server = Server("authentik-diag-mcp")
+server: Server[None] = Server("authentik-diag-mcp")
 
 
 class AuthentikConfig(BaseModel):
@@ -78,7 +78,8 @@ class AuthentikClient:
                 params=params,
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            return result if isinstance(result, dict) else {"data": result}
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP error {e.response.status_code}: {e.response.text}")
             raise
@@ -86,7 +87,7 @@ class AuthentikClient:
             logger.error(f"Request failed: {e!s}")
             raise
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the HTTP client."""
         await self.client.aclose()
 
@@ -95,42 +96,42 @@ class AuthentikClient:
 authentik_client: AuthentikClient | None = None
 
 
-@server.list_resources()
+@server.list_resources()  # type: ignore[no-untyped-call,misc]
 async def list_resources() -> list[Resource]:
     """List available Authentik diagnostic resources."""
     return [
         Resource(
-            uri="authentik://events",
+            uri=AnyUrl("authentik://events"),
             name="Events & Audit Logs",
             mimeType="application/json",
             description="View Authentik system events and audit logs for monitoring and diagnostics",
         ),
         Resource(
-            uri="authentik://users/info",
+            uri=AnyUrl("authentik://users/info"),
             name="User Information",
             mimeType="application/json",
             description="Read-only access to user information for diagnostics",
         ),
         Resource(
-            uri="authentik://groups/info",
+            uri=AnyUrl("authentik://groups/info"),
             name="Group Information",
             mimeType="application/json",
             description="Read-only access to group information for diagnostics",
         ),
         Resource(
-            uri="authentik://applications/status",
+            uri=AnyUrl("authentik://applications/status"),
             name="Application Status",
             mimeType="application/json",
             description="Read-only application status for monitoring",
         ),
         Resource(
-            uri="authentik://flows/status",
+            uri=AnyUrl("authentik://flows/status"),
             name="Flow Status",
             mimeType="application/json",
             description="Read-only flow status for monitoring",
         ),
         Resource(
-            uri="authentik://system/health",
+            uri=AnyUrl("authentik://system/health"),
             name="System Health",
             mimeType="application/json",
             description="System health and configuration information",
@@ -138,7 +139,7 @@ async def list_resources() -> list[Resource]:
     ]
 
 
-@server.read_resource()
+@server.read_resource()  # type: ignore[no-untyped-call,misc]
 async def read_resource(uri: str) -> str:
     """Read a specific Authentik diagnostic resource."""
     if not authentik_client:
@@ -169,7 +170,7 @@ async def read_resource(uri: str) -> str:
         raise ValueError(f"Unknown resource: {uri}")
 
 
-@server.list_tools()
+@server.list_tools()  # type: ignore[no-untyped-call,misc]
 async def list_tools() -> list[Tool]:
     """List available Authentik diagnostic tools."""
     return [
@@ -392,7 +393,7 @@ async def list_tools() -> list[Tool]:
     ]
 
 
-@server.call_tool()
+@server.call_tool()  # type: ignore[misc]
 async def call_tool(name: str, arguments: dict[str, Any]) -> Sequence[TextContent]:
     """Handle tool calls for Authentik diagnostic operations."""
     if not authentik_client:
@@ -510,7 +511,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> Sequence[TextConten
         return [TextContent(type="text", text=f"Error: {e!s}")]
 
 
-async def main():
+async def main() -> None:
     """Main entry point for the MCP server."""
     parser = argparse.ArgumentParser(description="Authentik Diagnostic MCP Server")
     parser.add_argument("--base-url", required=True, help="Authentik base URL")
@@ -546,8 +547,8 @@ async def main():
                     server_name="authentik-diag-mcp",
                     server_version="0.1.0",
                     capabilities=server.get_capabilities(
-                        notification_options=None,
-                        experimental_capabilities=None,
+                        notification_options=None,  # type: ignore[arg-type]
+                        experimental_capabilities=None,  # type: ignore[arg-type]
                     ),
                 ),
             )
