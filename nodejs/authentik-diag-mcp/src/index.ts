@@ -2,7 +2,7 @@
 
 /**
  * Authentik Diagnostic MCP Server - Read-Only API Integration
- * 
+ *
  * This MCP server provides diagnostic and read-only access to Authentik's API including:
  * - Event monitoring and audit logs
  * - User information (read-only)
@@ -11,7 +11,7 @@
  * - Application status (read-only)
  * - Flow status monitoring
  * - Provider status monitoring
- * 
+ *
  * This server is designed for monitoring and diagnostics only - no write operations are supported.
  */
 
@@ -46,7 +46,7 @@ class AuthentikClient {
     this.client = axios.create({
       baseURL: `${this.baseUrl}/api/v3/`,
       headers: {
-        'Authorization': `Bearer ${config.token}`,
+        Authorization: `Bearer ${config.token}`,
         'Content-Type': 'application/json',
       },
       httpsAgent: config.verifySSL ? undefined : { rejectUnauthorized: false },
@@ -205,12 +205,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            action: { type: 'string', description: 'Filter by event action (e.g., login, logout, update_user)' },
+            action: {
+              type: 'string',
+              description: 'Filter by event action (e.g., login, logout, update_user)',
+            },
             client_ip: { type: 'string', description: 'Filter by client IP address' },
             username: { type: 'string', description: 'Filter by username' },
             tenant: { type: 'string', description: 'Filter by tenant' },
-            created__gte: { type: 'string', format: 'date-time', description: 'Events created after this date' },
-            created__lte: { type: 'string', format: 'date-time', description: 'Events created before this date' },
+            created__gte: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Events created after this date',
+            },
+            created__lte: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Events created before this date',
+            },
             ordering: { type: 'string', description: 'Field to order by', default: '-created' },
             page: { type: 'integer', description: 'Page number', default: 1 },
             page_size: { type: 'integer', description: 'Number of items per page', default: 20 },
@@ -396,7 +407,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            application__isnull: { type: 'boolean', description: 'Filter providers without applications' },
+            application__isnull: {
+              type: 'boolean',
+              description: 'Filter providers without applications',
+            },
             ordering: { type: 'string', description: 'Field to order by' },
             page: { type: 'integer', description: 'Page number', default: 1 },
             page_size: { type: 'integer', description: 'Number of items per page', default: 20 },
@@ -434,11 +448,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_events':
         result = await authentikClient.request('GET', '/events/events/', args);
         break;
-      
+
       case 'authentik_get_event':
         result = await authentikClient.request('GET', `/events/events/${args.event_id}/`);
         break;
-      
+
       case 'authentik_search_events':
         result = await authentikClient.request('GET', '/events/events/', args);
         break;
@@ -447,37 +461,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_get_user_info':
         result = await authentikClient.request('GET', `/core/users/${args.user_id}/`);
         break;
-      
+
       case 'authentik_list_users_info':
         result = await authentikClient.request('GET', '/core/users/', args);
         break;
-      
-      case 'authentik_get_user_events':
+
+      case 'authentik_get_user_events': {
         const userEventParams = { username: args.username };
         if (args.action) userEventParams.action = args.action;
         if (args.limit) userEventParams.page_size = args.limit;
         result = await authentikClient.request('GET', '/events/events/', userEventParams);
         break;
+      }
 
       // Group Information Tools
       case 'authentik_get_group_info':
         result = await authentikClient.request('GET', `/core/groups/${args.group_id}/`);
         break;
-      
+
       case 'authentik_list_groups_info':
         result = await authentikClient.request('GET', '/core/groups/', args);
         break;
-      
-      case 'authentik_get_group_members':
+
+      case 'authentik_get_group_members': {
         const groupData = await authentikClient.request('GET', `/core/groups/${args.group_id}/`);
         result = { members: groupData.users_obj || [] };
         break;
+      }
 
       // Application Status Tools
       case 'authentik_get_application_status':
         result = await authentikClient.request('GET', `/core/applications/${args.app_slug}/`);
         break;
-      
+
       case 'authentik_list_applications_status':
         result = await authentikClient.request('GET', '/core/applications/', args);
         break;
@@ -486,7 +502,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_get_flow_status':
         result = await authentikClient.request('GET', `/flows/instances/${args.flow_slug}/`);
         break;
-      
+
       case 'authentik_list_flows_status':
         result = await authentikClient.request('GET', '/flows/instances/', args);
         break;
@@ -495,7 +511,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_get_system_config':
         result = await authentikClient.request('GET', '/root/config/');
         break;
-      
+
       case 'authentik_get_version_info':
         try {
           const configData = await authentikClient.request('GET', '/root/config/');
@@ -512,7 +528,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_providers_status':
         result = await authentikClient.request('GET', '/providers/all/', args);
         break;
-      
+
       case 'authentik_get_provider_status':
         result = await authentikClient.request('GET', `/providers/all/${args.provider_id}/`);
         break;
@@ -546,7 +562,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Main function
 async function main() {
   const program = new Command();
-  
+
   program
     .name('authentik-diag-mcp')
     .description('Authentik Diagnostic MCP Server - Read-Only API Integration')

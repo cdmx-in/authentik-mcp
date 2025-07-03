@@ -2,10 +2,10 @@
 
 /**
  * Authentik MCP Server - Full API Integration
- * 
+ *
  * This MCP server provides comprehensive access to Authentik's API including:
  * - User management (CRUD operations)
- * - Group management  
+ * - Group management
  * - Application management
  * - Flow management
  * - Event monitoring
@@ -49,7 +49,7 @@ class AuthentikClient {
     this.client = axios.create({
       baseURL: `${this.baseUrl}/api/v3/`,
       headers: {
-        'Authorization': `Bearer ${config.token}`,
+        Authorization: `Bearer ${config.token}`,
         'Content-Type': 'application/json',
       },
       httpsAgent: config.verifySSL ? undefined : { rejectUnauthorized: false },
@@ -232,7 +232,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             name: { type: 'string', description: 'Full name' },
             password: { type: 'string', description: 'Password' },
             is_active: { type: 'boolean', description: 'Whether user is active', default: true },
-            groups: { type: 'array', items: { type: 'integer' }, description: 'Group IDs to assign' },
+            groups: {
+              type: 'array',
+              items: { type: 'integer' },
+              description: 'Group IDs to assign',
+            },
           },
           required: ['username', 'email', 'name'],
         },
@@ -248,7 +252,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             email: { type: 'string', description: 'Email address' },
             name: { type: 'string', description: 'Full name' },
             is_active: { type: 'boolean', description: 'Whether user is active' },
-            groups: { type: 'array', items: { type: 'integer' }, description: 'Group IDs to assign' },
+            groups: {
+              type: 'array',
+              items: { type: 'integer' },
+              description: 'Group IDs to assign',
+            },
           },
           required: ['user_id'],
         },
@@ -297,9 +305,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: 'object',
           properties: {
             name: { type: 'string', description: 'Group name' },
-            is_superuser: { type: 'boolean', description: 'Whether group has superuser privileges', default: false },
+            is_superuser: {
+              type: 'boolean',
+              description: 'Whether group has superuser privileges',
+              default: false,
+            },
             parent: { type: 'string', description: 'Parent group ID' },
-            users: { type: 'array', items: { type: 'integer' }, description: 'User IDs to add to group' },
+            users: {
+              type: 'array',
+              items: { type: 'integer' },
+              description: 'User IDs to add to group',
+            },
           },
           required: ['name'],
         },
@@ -341,7 +357,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             provider: { type: 'integer', description: 'Provider ID' },
             meta_description: { type: 'string', description: 'Application description' },
             meta_publisher: { type: 'string', description: 'Application publisher' },
-            policy_engine_mode: { type: 'string', enum: ['all', 'any'], description: 'Policy engine mode', default: 'any' },
+            policy_engine_mode: {
+              type: 'string',
+              enum: ['all', 'any'],
+              description: 'Policy engine mode',
+              default: 'any',
+            },
           },
           required: ['name', 'slug'],
         },
@@ -409,7 +430,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            application__isnull: { type: 'boolean', description: 'Filter providers without applications' },
+            application__isnull: {
+              type: 'boolean',
+              description: 'Filter providers without applications',
+            },
             ordering: { type: 'string', description: 'Field to order by' },
             page: { type: 'integer', description: 'Page number', default: 1 },
             page_size: { type: 'integer', description: 'Number of items per page', default: 20 },
@@ -478,26 +502,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_users':
         result = await authentikClient.request('GET', '/core/users/', undefined, args);
         break;
-      
+
       case 'authentik_get_user':
         if (!args?.user_id) {
           throw new Error('user_id is required');
         }
         result = await authentikClient.request('GET', `/core/users/${args.user_id}/`);
         break;
-      
+
       case 'authentik_create_user':
         result = await authentikClient.request('POST', '/core/users/', args);
         break;
-      
-      case 'authentik_update_user':
+
+      case 'authentik_update_user': {
         if (!args?.user_id) {
           throw new Error('user_id is required');
         }
         const { user_id, ...updateData } = args;
         result = await authentikClient.request('PATCH', `/core/users/${user_id}/`, updateData);
         break;
-      
+      }
+
       case 'authentik_delete_user':
         if (!args?.user_id) {
           throw new Error('user_id is required');
@@ -510,14 +535,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_groups':
         result = await authentikClient.request('GET', '/core/groups/', undefined, args);
         break;
-      
+
       case 'authentik_get_group':
         if (!args?.group_id) {
           throw new Error('group_id is required');
         }
         result = await authentikClient.request('GET', `/core/groups/${args.group_id}/`);
         break;
-      
+
       case 'authentik_create_group':
         result = await authentikClient.request('POST', '/core/groups/', args);
         break;
@@ -526,14 +551,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_applications':
         result = await authentikClient.request('GET', '/core/applications/', undefined, args);
         break;
-      
+
       case 'authentik_get_application':
         if (!args?.app_slug) {
           throw new Error('app_slug is required');
         }
         result = await authentikClient.request('GET', `/core/applications/${args.app_slug}/`);
         break;
-      
+
       case 'authentik_create_application':
         result = await authentikClient.request('POST', '/core/applications/', args);
         break;
@@ -542,7 +567,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_events':
         result = await authentikClient.request('GET', '/events/events/', undefined, args);
         break;
-      
+
       case 'authentik_get_event':
         if (!args?.event_id) {
           throw new Error('event_id is required');
@@ -554,7 +579,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_flows':
         result = await authentikClient.request('GET', '/flows/instances/', undefined, args);
         break;
-      
+
       case 'authentik_get_flow':
         if (!args?.flow_slug) {
           throw new Error('flow_slug is required');
@@ -566,7 +591,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_providers':
         result = await authentikClient.request('GET', '/providers/all/', undefined, args);
         break;
-      
+
       case 'authentik_get_provider':
         if (!args?.provider_id) {
           throw new Error('provider_id is required');
@@ -578,7 +603,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_list_tokens':
         result = await authentikClient.request('GET', '/core/tokens/', undefined, args);
         break;
-      
+
       case 'authentik_create_token':
         result = await authentikClient.request('POST', '/core/tokens/', args);
         break;
@@ -612,7 +637,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Main function
 async function main() {
   const program = new Command();
-  
+
   program
     .name('authentik-mcp')
     .description('Authentik MCP Server - Full API Integration')

@@ -4,7 +4,7 @@ Authentik MCP Server - Full API Integration
 
 This MCP server provides comprehensive access to Authentik's API including:
 - User management (CRUD operations)
-- Group management  
+- Group management
 - Application management
 - Flow management
 - Event monitoring
@@ -20,7 +20,8 @@ This MCP server provides comprehensive access to Authentik's API including:
 import argparse
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 from urllib.parse import urljoin
 
 import httpx
@@ -31,11 +32,8 @@ from mcp.types import (
     Resource,
     TextContent,
     Tool,
-    INVALID_PARAMS,
-    INTERNAL_ERROR,
 )
 from pydantic import BaseModel, Field
-
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,26 +52,26 @@ class AuthentikConfig(BaseModel):
 
 class AuthentikClient:
     """HTTP client for Authentik API."""
-    
-    def __init__(self, config: AuthentikConfig):
+
+    def __init__(self, config: AuthentikConfig) -> None:
         self.config = config
-        self.base_url = config.base_url.rstrip('/')
+        self.base_url = config.base_url.rstrip("/")
         self.client = httpx.AsyncClient(
             headers={"Authorization": f"Bearer {config.token}"},
             verify=config.verify_ssl,
             timeout=30.0,
         )
-    
+
     async def request(
         self,
         method: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        params: dict[str, Any] | None = None,
+        json_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Make an API request to Authentik."""
-        url = urljoin(f"{self.base_url}/api/v3/", endpoint.lstrip('/'))
-        
+        url = urljoin(f"{self.base_url}/api/v3/", endpoint.lstrip("/"))
+
         try:
             response = await self.client.request(
                 method=method,
@@ -84,60 +82,60 @@ class AuthentikClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error {e.response.status_code}: {e.response.text}")
+            logger.exception(f"HTTP error {e.response.status_code}: {e.response.text}")
             raise
         except Exception as e:
-            logger.error(f"Request failed: {str(e)}")
+            logger.exception(f"Request failed: {e!s}")
             raise
-    
-    async def close(self):
+
+    async def close(self) -> None:
         """Close the HTTP client."""
         await self.client.aclose()
 
 
 # Global client instance
-authentik_client: Optional[AuthentikClient] = None
+authentik_client: AuthentikClient | None = None
 
 
 @server.list_resources()
-async def list_resources() -> List[Resource]:
+async def list_resources() -> list[Resource]:
     """List available Authentik resources."""
     return [
         Resource(
             uri="authentik://users",
             name="Users",
             mimeType="application/json",
-            description="List and manage Authentik users"
+            description="List and manage Authentik users",
         ),
         Resource(
-            uri="authentik://groups", 
+            uri="authentik://groups",
             name="Groups",
             mimeType="application/json",
-            description="List and manage Authentik groups"
+            description="List and manage Authentik groups",
         ),
         Resource(
             uri="authentik://applications",
-            name="Applications", 
+            name="Applications",
             mimeType="application/json",
-            description="List and manage Authentik applications"
+            description="List and manage Authentik applications",
         ),
         Resource(
             uri="authentik://events",
             name="Events",
-            mimeType="application/json", 
-            description="View Authentik system events and audit logs"
+            mimeType="application/json",
+            description="View Authentik system events and audit logs",
         ),
         Resource(
             uri="authentik://flows",
             name="Flows",
             mimeType="application/json",
-            description="List and manage Authentik authentication flows"
+            description="List and manage Authentik authentication flows",
         ),
         Resource(
             uri="authentik://providers",
             name="Providers",
             mimeType="application/json",
-            description="List and manage Authentik providers"
+            description="List and manage Authentik providers",
         ),
     ]
 
@@ -146,32 +144,33 @@ async def list_resources() -> List[Resource]:
 async def read_resource(uri: str) -> str:
     """Read a specific Authentik resource."""
     if not authentik_client:
-        raise ValueError("Authentik client not initialized")
-    
+        msg = "Authentik client not initialized"
+        raise ValueError(msg)
+
     if uri == "authentik://users":
         data = await authentik_client.request("GET", "/core/users/")
         return f"Users:\n{data}"
-    elif uri == "authentik://groups":
+    if uri == "authentik://groups":
         data = await authentik_client.request("GET", "/core/groups/")
         return f"Groups:\n{data}"
-    elif uri == "authentik://applications":
+    if uri == "authentik://applications":
         data = await authentik_client.request("GET", "/core/applications/")
         return f"Applications:\n{data}"
-    elif uri == "authentik://events":
+    if uri == "authentik://events":
         data = await authentik_client.request("GET", "/events/events/")
         return f"Events:\n{data}"
-    elif uri == "authentik://flows":
+    if uri == "authentik://flows":
         data = await authentik_client.request("GET", "/flows/instances/")
         return f"Flows:\n{data}"
-    elif uri == "authentik://providers":
+    if uri == "authentik://providers":
         data = await authentik_client.request("GET", "/providers/all/")
         return f"Providers:\n{data}"
-    else:
-        raise ValueError(f"Unknown resource: {uri}")
+    msg = f"Unknown resource: {uri}"
+    raise ValueError(msg)
 
 
 @server.list_tools()
-async def list_tools() -> List[Tool]:
+async def list_tools() -> list[Tool]:
     """List available Authentik tools."""
     return [
         # User Management Tools
@@ -186,9 +185,9 @@ async def list_tools() -> List[Tool]:
                     "group": {"type": "string", "description": "Filter by group membership"},
                     "ordering": {"type": "string", "description": "Field to order by"},
                     "page": {"type": "integer", "description": "Page number", "default": 1},
-                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20}
-                }
-            }
+                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20},
+                },
+            },
         ),
         Tool(
             name="authentik_get_user",
@@ -196,26 +195,26 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "user_id": {"type": "integer", "description": "User ID to retrieve"}
+                    "user_id": {"type": "integer", "description": "User ID to retrieve"},
                 },
-                "required": ["user_id"]
-            }
+                "required": ["user_id"],
+            },
         ),
         Tool(
             name="authentik_create_user",
             description="Create a new user in Authentik",
             inputSchema={
-                "type": "object", 
+                "type": "object",
                 "properties": {
                     "username": {"type": "string", "description": "Username"},
                     "email": {"type": "string", "description": "Email address"},
                     "name": {"type": "string", "description": "Full name"},
                     "password": {"type": "string", "description": "Password"},
                     "is_active": {"type": "boolean", "description": "Whether user is active", "default": True},
-                    "groups": {"type": "array", "items": {"type": "integer"}, "description": "Group IDs to assign"}
+                    "groups": {"type": "array", "items": {"type": "integer"}, "description": "Group IDs to assign"},
                 },
-                "required": ["username", "email", "name"]
-            }
+                "required": ["username", "email", "name"],
+            },
         ),
         Tool(
             name="authentik_update_user",
@@ -228,10 +227,10 @@ async def list_tools() -> List[Tool]:
                     "email": {"type": "string", "description": "Email address"},
                     "name": {"type": "string", "description": "Full name"},
                     "is_active": {"type": "boolean", "description": "Whether user is active"},
-                    "groups": {"type": "array", "items": {"type": "integer"}, "description": "Group IDs to assign"}
+                    "groups": {"type": "array", "items": {"type": "integer"}, "description": "Group IDs to assign"},
                 },
-                "required": ["user_id"]
-            }
+                "required": ["user_id"],
+            },
         ),
         Tool(
             name="authentik_delete_user",
@@ -239,12 +238,12 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "user_id": {"type": "integer", "description": "User ID to delete"}
+                    "user_id": {"type": "integer", "description": "User ID to delete"},
                 },
-                "required": ["user_id"]
-            }
+                "required": ["user_id"],
+            },
         ),
-        
+
         # Group Management Tools
         Tool(
             name="authentik_list_groups",
@@ -255,9 +254,9 @@ async def list_tools() -> List[Tool]:
                     "search": {"type": "string", "description": "Search term for filtering groups"},
                     "ordering": {"type": "string", "description": "Field to order by"},
                     "page": {"type": "integer", "description": "Page number", "default": 1},
-                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20}
-                }
-            }
+                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20},
+                },
+            },
         ),
         Tool(
             name="authentik_get_group",
@@ -265,10 +264,10 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "group_id": {"type": "string", "description": "Group ID to retrieve"}
+                    "group_id": {"type": "string", "description": "Group ID to retrieve"},
                 },
-                "required": ["group_id"]
-            }
+                "required": ["group_id"],
+            },
         ),
         Tool(
             name="authentik_create_group",
@@ -277,12 +276,16 @@ async def list_tools() -> List[Tool]:
                 "type": "object",
                 "properties": {
                     "name": {"type": "string", "description": "Group name"},
-                    "is_superuser": {"type": "boolean", "description": "Whether group has superuser privileges", "default": False},
+                    "is_superuser": {
+                        "type": "boolean",
+                        "description": "Whether group has superuser privileges",
+                        "default": False,
+                    },
                     "parent": {"type": "string", "description": "Parent group ID"},
-                    "users": {"type": "array", "items": {"type": "integer"}, "description": "User IDs to add to group"}
+                    "users": {"type": "array", "items": {"type": "integer"}, "description": "User IDs to add to group"},
                 },
-                "required": ["name"]
-            }
+                "required": ["name"],
+            },
         ),
         Tool(
             name="authentik_update_group",
@@ -294,10 +297,10 @@ async def list_tools() -> List[Tool]:
                     "name": {"type": "string", "description": "Group name"},
                     "is_superuser": {"type": "boolean", "description": "Whether group has superuser privileges"},
                     "parent": {"type": "string", "description": "Parent group ID"},
-                    "users": {"type": "array", "items": {"type": "integer"}, "description": "User IDs to add to group"}
+                    "users": {"type": "array", "items": {"type": "integer"}, "description": "User IDs to add to group"},
                 },
-                "required": ["group_id"]
-            }
+                "required": ["group_id"],
+            },
         ),
         Tool(
             name="authentik_delete_group",
@@ -305,12 +308,12 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "group_id": {"type": "string", "description": "Group ID to delete"}
+                    "group_id": {"type": "string", "description": "Group ID to delete"},
                 },
-                "required": ["group_id"]
-            }
+                "required": ["group_id"],
+            },
         ),
-        
+
         # Application Management Tools
         Tool(
             name="authentik_list_applications",
@@ -321,9 +324,9 @@ async def list_tools() -> List[Tool]:
                     "search": {"type": "string", "description": "Search term for filtering applications"},
                     "ordering": {"type": "string", "description": "Field to order by"},
                     "page": {"type": "integer", "description": "Page number", "default": 1},
-                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20}
-                }
-            }
+                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20},
+                },
+            },
         ),
         Tool(
             name="authentik_get_application",
@@ -331,10 +334,10 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "app_slug": {"type": "string", "description": "Application slug to retrieve"}
+                    "app_slug": {"type": "string", "description": "Application slug to retrieve"},
                 },
-                "required": ["app_slug"]
-            }
+                "required": ["app_slug"],
+            },
         ),
         Tool(
             name="authentik_create_application",
@@ -347,10 +350,15 @@ async def list_tools() -> List[Tool]:
                     "provider": {"type": "integer", "description": "Provider ID"},
                     "meta_description": {"type": "string", "description": "Application description"},
                     "meta_publisher": {"type": "string", "description": "Application publisher"},
-                    "policy_engine_mode": {"type": "string", "enum": ["all", "any"], "description": "Policy engine mode", "default": "any"}
+                    "policy_engine_mode": {
+                        "type": "string",
+                        "enum": ["all", "any"],
+                        "description": "Policy engine mode",
+                        "default": "any",
+                    },
                 },
-                "required": ["name", "slug"]
-            }
+                "required": ["name", "slug"],
+            },
         ),
         Tool(
             name="authentik_update_application",
@@ -363,10 +371,14 @@ async def list_tools() -> List[Tool]:
                     "provider": {"type": "integer", "description": "Provider ID"},
                     "meta_description": {"type": "string", "description": "Application description"},
                     "meta_publisher": {"type": "string", "description": "Application publisher"},
-                    "policy_engine_mode": {"type": "string", "enum": ["all", "any"], "description": "Policy engine mode"}
+                    "policy_engine_mode": {
+                        "type": "string",
+                        "enum": ["all", "any"],
+                        "description": "Policy engine mode",
+                    },
                 },
-                "required": ["app_slug"]
-            }
+                "required": ["app_slug"],
+            },
         ),
         Tool(
             name="authentik_delete_application",
@@ -374,12 +386,12 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "app_slug": {"type": "string", "description": "Application slug to delete"}
+                    "app_slug": {"type": "string", "description": "Application slug to delete"},
                 },
-                "required": ["app_slug"]
-            }
+                "required": ["app_slug"],
+            },
         ),
-        
+
         # Event Monitoring Tools
         Tool(
             name="authentik_list_events",
@@ -392,9 +404,9 @@ async def list_tools() -> List[Tool]:
                     "username": {"type": "string", "description": "Filter by username"},
                     "ordering": {"type": "string", "description": "Field to order by", "default": "-created"},
                     "page": {"type": "integer", "description": "Page number", "default": 1},
-                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20}
-                }
-            }
+                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20},
+                },
+            },
         ),
         Tool(
             name="authentik_get_event",
@@ -402,12 +414,12 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "event_id": {"type": "string", "description": "Event ID to retrieve"}
+                    "event_id": {"type": "string", "description": "Event ID to retrieve"},
                 },
-                "required": ["event_id"]
-            }
+                "required": ["event_id"],
+            },
         ),
-        
+
         # Flow Management Tools
         Tool(
             name="authentik_list_flows",
@@ -419,9 +431,9 @@ async def list_tools() -> List[Tool]:
                     "designation": {"type": "string", "description": "Filter by flow designation"},
                     "ordering": {"type": "string", "description": "Field to order by"},
                     "page": {"type": "integer", "description": "Page number", "default": 1},
-                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20}
-                }
-            }
+                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20},
+                },
+            },
         ),
         Tool(
             name="authentik_get_flow",
@@ -429,12 +441,12 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "flow_slug": {"type": "string", "description": "Flow slug to retrieve"}
+                    "flow_slug": {"type": "string", "description": "Flow slug to retrieve"},
                 },
-                "required": ["flow_slug"]
-            }
+                "required": ["flow_slug"],
+            },
         ),
-        
+
         # Provider Management Tools
         Tool(
             name="authentik_list_providers",
@@ -445,9 +457,9 @@ async def list_tools() -> List[Tool]:
                     "application__isnull": {"type": "boolean", "description": "Filter providers without applications"},
                     "ordering": {"type": "string", "description": "Field to order by"},
                     "page": {"type": "integer", "description": "Page number", "default": 1},
-                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20}
-                }
-            }
+                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20},
+                },
+            },
         ),
         Tool(
             name="authentik_get_provider",
@@ -455,12 +467,12 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "provider_id": {"type": "integer", "description": "Provider ID to retrieve"}
+                    "provider_id": {"type": "integer", "description": "Provider ID to retrieve"},
                 },
-                "required": ["provider_id"]
-            }
+                "required": ["provider_id"],
+            },
         ),
-        
+
         # Token Management Tools
         Tool(
             name="authentik_list_tokens",
@@ -472,9 +484,9 @@ async def list_tools() -> List[Tool]:
                     "identifier": {"type": "string", "description": "Filter by token identifier"},
                     "ordering": {"type": "string", "description": "Field to order by"},
                     "page": {"type": "integer", "description": "Page number", "default": 1},
-                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20}
-                }
-            }
+                    "page_size": {"type": "integer", "description": "Number of items per page", "default": 20},
+                },
+            },
         ),
         Tool(
             name="authentik_create_token",
@@ -486,173 +498,172 @@ async def list_tools() -> List[Tool]:
                     "user": {"type": "integer", "description": "User ID for the token"},
                     "description": {"type": "string", "description": "Token description"},
                     "expires": {"type": "string", "format": "date-time", "description": "Token expiration date"},
-                    "expiring": {"type": "boolean", "description": "Whether token expires", "default": True}
+                    "expiring": {"type": "boolean", "description": "Whether token expires", "default": True},
                 },
-                "required": ["identifier", "user"]
-            }
+                "required": ["identifier", "user"],
+            },
         ),
     ]
 
 
 @server.call_tool()
-async def call_tool(name: str, arguments: Dict[str, Any]) -> Sequence[TextContent]:
+async def call_tool(name: str, arguments: dict[str, Any]) -> Sequence[TextContent]:
     """Handle tool calls for Authentik operations."""
     if not authentik_client:
         return [TextContent(type="text", text="Error: Authentik client not initialized")]
-    
+
     try:
         # User Management Tools
         if name == "authentik_list_users":
             params = {k: v for k, v in arguments.items() if v is not None}
             data = await authentik_client.request("GET", "/core/users/", params=params)
             return [TextContent(type="text", text=f"Users: {data}")]
-        
-        elif name == "authentik_get_user":
+
+        if name == "authentik_get_user":
             user_id = arguments["user_id"]
             data = await authentik_client.request("GET", f"/core/users/{user_id}/")
             return [TextContent(type="text", text=f"User details: {data}")]
-        
-        elif name == "authentik_create_user":
+
+        if name == "authentik_create_user":
             data = await authentik_client.request("POST", "/core/users/", json_data=arguments)
             return [TextContent(type="text", text=f"Created user: {data}")]
-        
-        elif name == "authentik_update_user":
+
+        if name == "authentik_update_user":
             user_id = arguments.pop("user_id")
             data = await authentik_client.request("PATCH", f"/core/users/{user_id}/", json_data=arguments)
             return [TextContent(type="text", text=f"Updated user: {data}")]
-        
-        elif name == "authentik_delete_user":
+
+        if name == "authentik_delete_user":
             user_id = arguments["user_id"]
             await authentik_client.request("DELETE", f"/core/users/{user_id}/")
             return [TextContent(type="text", text=f"Deleted user {user_id}")]
-        
+
         # Group Management Tools
-        elif name == "authentik_list_groups":
+        if name == "authentik_list_groups":
             params = {k: v for k, v in arguments.items() if v is not None}
             data = await authentik_client.request("GET", "/core/groups/", params=params)
             return [TextContent(type="text", text=f"Groups: {data}")]
-        
-        elif name == "authentik_get_group":
+
+        if name == "authentik_get_group":
             group_id = arguments["group_id"]
             data = await authentik_client.request("GET", f"/core/groups/{group_id}/")
             return [TextContent(type="text", text=f"Group details: {data}")]
-        
-        elif name == "authentik_create_group":
+
+        if name == "authentik_create_group":
             data = await authentik_client.request("POST", "/core/groups/", json_data=arguments)
             return [TextContent(type="text", text=f"Created group: {data}")]
-        
-        elif name == "authentik_update_group":
+
+        if name == "authentik_update_group":
             group_id = arguments.pop("group_id")
             data = await authentik_client.request("PATCH", f"/core/groups/{group_id}/", json_data=arguments)
             return [TextContent(type="text", text=f"Updated group: {data}")]
-        
-        elif name == "authentik_delete_group":
+
+        if name == "authentik_delete_group":
             group_id = arguments["group_id"]
             await authentik_client.request("DELETE", f"/core/groups/{group_id}/")
             return [TextContent(type="text", text=f"Deleted group {group_id}")]
-        
+
         # Application Management Tools
-        elif name == "authentik_list_applications":
+        if name == "authentik_list_applications":
             params = {k: v for k, v in arguments.items() if v is not None}
             data = await authentik_client.request("GET", "/core/applications/", params=params)
             return [TextContent(type="text", text=f"Applications: {data}")]
-        
-        elif name == "authentik_get_application":
+
+        if name == "authentik_get_application":
             app_slug = arguments["app_slug"]
             data = await authentik_client.request("GET", f"/core/applications/{app_slug}/")
             return [TextContent(type="text", text=f"Application details: {data}")]
-        
-        elif name == "authentik_create_application":
+
+        if name == "authentik_create_application":
             data = await authentik_client.request("POST", "/core/applications/", json_data=arguments)
             return [TextContent(type="text", text=f"Created application: {data}")]
-        
-        elif name == "authentik_update_application":
+
+        if name == "authentik_update_application":
             app_slug = arguments.pop("app_slug")
             data = await authentik_client.request("PATCH", f"/core/applications/{app_slug}/", json_data=arguments)
             return [TextContent(type="text", text=f"Updated application: {data}")]
-        
-        elif name == "authentik_delete_application":
+
+        if name == "authentik_delete_application":
             app_slug = arguments["app_slug"]
             await authentik_client.request("DELETE", f"/core/applications/{app_slug}/")
             return [TextContent(type="text", text=f"Deleted application {app_slug}")]
-        
+
         # Event Monitoring Tools
-        elif name == "authentik_list_events":
+        if name == "authentik_list_events":
             params = {k: v for k, v in arguments.items() if v is not None}
             data = await authentik_client.request("GET", "/events/events/", params=params)
             return [TextContent(type="text", text=f"Events: {data}")]
-        
-        elif name == "authentik_get_event":
+
+        if name == "authentik_get_event":
             event_id = arguments["event_id"]
             data = await authentik_client.request("GET", f"/events/events/{event_id}/")
             return [TextContent(type="text", text=f"Event details: {data}")]
-        
+
         # Flow Management Tools
-        elif name == "authentik_list_flows":
+        if name == "authentik_list_flows":
             params = {k: v for k, v in arguments.items() if v is not None}
             data = await authentik_client.request("GET", "/flows/instances/", params=params)
             return [TextContent(type="text", text=f"Flows: {data}")]
-        
-        elif name == "authentik_get_flow":
+
+        if name == "authentik_get_flow":
             flow_slug = arguments["flow_slug"]
             data = await authentik_client.request("GET", f"/flows/instances/{flow_slug}/")
             return [TextContent(type="text", text=f"Flow details: {data}")]
-        
+
         # Provider Management Tools
-        elif name == "authentik_list_providers":
+        if name == "authentik_list_providers":
             params = {k: v for k, v in arguments.items() if v is not None}
             data = await authentik_client.request("GET", "/providers/all/", params=params)
             return [TextContent(type="text", text=f"Providers: {data}")]
-        
-        elif name == "authentik_get_provider":
+
+        if name == "authentik_get_provider":
             provider_id = arguments["provider_id"]
             data = await authentik_client.request("GET", f"/providers/all/{provider_id}/")
             return [TextContent(type="text", text=f"Provider details: {data}")]
-        
+
         # Token Management Tools
-        elif name == "authentik_list_tokens":
+        if name == "authentik_list_tokens":
             params = {k: v for k, v in arguments.items() if v is not None}
             data = await authentik_client.request("GET", "/core/tokens/", params=params)
             return [TextContent(type="text", text=f"Tokens: {data}")]
-        
-        elif name == "authentik_create_token":
+
+        if name == "authentik_create_token":
             data = await authentik_client.request("POST", "/core/tokens/", json_data=arguments)
             return [TextContent(type="text", text=f"Created token: {data}")]
-        
-        else:
-            return [TextContent(type="text", text=f"Unknown tool: {name}")]
-    
+
+        return [TextContent(type="text", text=f"Unknown tool: {name}")]
+
     except Exception as e:
-        logger.error(f"Tool call failed: {str(e)}")
-        return [TextContent(type="text", text=f"Error: {str(e)}")]
+        logger.exception(f"Tool call failed: {e!s}")
+        return [TextContent(type="text", text=f"Error: {e!s}")]
 
 
-async def main():
+async def main() -> None:
     """Main entry point for the MCP server."""
     parser = argparse.ArgumentParser(description="Authentik MCP Server")
     parser.add_argument("--base-url", required=True, help="Authentik base URL")
     parser.add_argument("--token", required=True, help="Authentik API token")
     parser.add_argument("--no-verify-ssl", action="store_true", help="Disable SSL verification")
-    
+
     args = parser.parse_args()
-    
+
     # Initialize Authentik client
     global authentik_client
     config = AuthentikConfig(
         base_url=args.base_url,
         token=args.token,
-        verify_ssl=not args.no_verify_ssl
+        verify_ssl=not args.no_verify_ssl,
     )
     authentik_client = AuthentikClient(config)
-    
+
     # Test connection
     try:
         await authentik_client.request("GET", "/root/config/")
         logger.info("Successfully connected to Authentik API")
     except Exception as e:
-        logger.error(f"Failed to connect to Authentik API: {e}")
+        logger.exception(f"Failed to connect to Authentik API: {e}")
         return
-    
+
     # Run MCP server
     try:
         async with stdio_server() as (read_stream, write_stream):
