@@ -25,7 +25,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import httpx
-from mcp.server import Server, NotificationOptions
+from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
 from mcp.types import (
@@ -686,7 +686,7 @@ async def main() -> None:
 
 
 # --- Ensure main() is always awaited, even if not run as __main__ ---
-def run():
+def run() -> None:
     asyncio.run(main())
 
 if __name__ == "__main__":
