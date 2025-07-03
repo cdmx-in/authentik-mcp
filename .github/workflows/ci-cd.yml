@@ -2,12 +2,10 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
   release:
-    types: [ published ]
-
+    types: [created]
 jobs:
   test-python:
     runs-on: ubuntu-latest
@@ -119,11 +117,8 @@ jobs:
           nodejs/authentik-diag-mcp/dist/
 
   publish:
-    if: github.event_name == 'release'
     needs: [build]
     runs-on: ubuntu-latest
-    environment: release
-    
     steps:
     - uses: actions/checkout@v4
     
