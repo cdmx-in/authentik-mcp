@@ -117,6 +117,7 @@ jobs:
           nodejs/authentik-diag-mcp/dist/
 
   publish:
+    if: github.event_name == 'release'
     needs: [build]
     runs-on: ubuntu-latest
     steps:

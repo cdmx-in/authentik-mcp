@@ -25,7 +25,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import httpx
-from mcp.server import Server
+from mcp.server import Server, NotificationOptions
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
 from mcp.types import (
@@ -673,10 +673,10 @@ async def main() -> None:
                 write_stream,
                 InitializationOptions(
                     server_name="authentik-mcp",
-                    server_version="0.1.0",
+                    server_version="0.1.1",
                     capabilities=server.get_capabilities(
-                        notification_options=None,  # type: ignore[arg-type]
-                        experimental_capabilities=None,  # type: ignore[arg-type]
+                        notification_options=NotificationOptions(),
+                        experimental_capabilities={},
                     ),
                 ),
             )
@@ -685,5 +685,9 @@ async def main() -> None:
             await authentik_client.close()
 
 
-if __name__ == "__main__":
+# --- Ensure main() is always awaited, even if not run as __main__ ---
+def run():
     asyncio.run(main())
+
+if __name__ == "__main__":
+    run()
