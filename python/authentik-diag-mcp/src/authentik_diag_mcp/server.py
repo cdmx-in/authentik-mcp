@@ -50,7 +50,7 @@ class AuthentikConfig(BaseModel):
 class AuthentikClient:
     """HTTP client for Authentik API."""
 
-    def __init__(self, config: AuthentikConfig):
+    def __init__(self, config: AuthentikConfig) -> None:
         self.config = config
         self.base_url = config.base_url.rstrip("/")
         self.client = httpx.AsyncClient(
@@ -67,7 +67,8 @@ class AuthentikClient:
     ) -> dict[str, Any]:
         """Make a read-only API request to Authentik."""
         if method.upper() not in ["GET", "HEAD", "OPTIONS"]:
-            raise ValueError(f"Method {method} not allowed in diagnostic mode")
+            error_msg = f"Method {method} not allowed in diagnostic mode"
+            raise ValueError(error_msg)
 
         url = urljoin(f"{self.base_url}/api/v3/", endpoint.lstrip("/"))
 
@@ -143,7 +144,8 @@ async def list_resources() -> list[Resource]:
 async def read_resource(uri: str) -> str:
     """Read a specific Authentik diagnostic resource."""
     if not authentik_client:
-        raise ValueError("Authentik client not initialized")
+        error_msg = "Authentik client not initialized"
+        raise ValueError(error_msg)
 
     if uri == "authentik://events":
         data = await authentik_client.request("GET", "/events/events/")
@@ -163,11 +165,13 @@ async def read_resource(uri: str) -> str:
     if uri == "authentik://system/health":
         try:
             config_data = await authentik_client.request("GET", "/root/config/")
-            return f"System Health and Configuration:\n{config_data}"
         except Exception:
             return "System health information not accessible"
+        else:
+            return f"System Health and Configuration:\n{config_data}"
     else:
-        raise ValueError(f"Unknown resource: {uri}")
+        error_msg = f"Unknown resource: {uri}"
+        raise ValueError(error_msg)
 
 
 @server.list_tools()  # type: ignore[no-untyped-call,misc]
@@ -181,12 +185,23 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "action": {"type": "string", "description": "Filter by event action (e.g., 'login', 'logout', 'update_user')"},
+                    "action": {
+                        "type": "string",
+                        "description": "Filter by event action (e.g., 'login', 'logout', 'update_user')",
+                    },
                     "client_ip": {"type": "string", "description": "Filter by client IP address"},
                     "username": {"type": "string", "description": "Filter by username"},
                     "tenant": {"type": "string", "description": "Filter by tenant"},
-                    "created__gte": {"type": "string", "format": "date-time", "description": "Events created after this date"},
-                    "created__lte": {"type": "string", "format": "date-time", "description": "Events created before this date"},
+                    "created__gte": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Events created after this date",
+                    },
+                    "created__lte": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Events created before this date",
+                    },
                     "ordering": {"type": "string", "description": "Field to order by", "default": "-created"},
                     "page": {"type": "integer", "description": "Page number", "default": 1},
                     "page_size": {"type": "integer", "description": "Number of items per page", "default": 20},
