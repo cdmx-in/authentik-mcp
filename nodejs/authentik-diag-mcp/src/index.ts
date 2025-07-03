@@ -174,7 +174,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       case 'authentik://system/health':
         try {
           data = await authentikClient.request('GET', '/root/config/');
-        } catch (error) {
+        } catch {
           data = { error: 'System health information not accessible' };
         }
         break;
@@ -529,7 +529,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             version: typedConfigData.version || 'unknown',
             build_hash: typedConfigData.build_hash || 'unknown',
           };
-        } catch (error) {
+        } catch {
           result = { error: 'Version information not accessible' };
         }
         break;

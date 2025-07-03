@@ -35,36 +35,22 @@ A Model Context Protocol (MCP) server that provides comprehensive integration wi
 - System health monitoring
 - Configuration management
 
-## Installation
+## MCP Integration
 
-### Using pip
-```bash
-pip install authentik-mcp
-```
+This server is designed to be used with MCP-compatible tools and platforms. It provides a standardized interface for interacting with Authentik instances through the Model Context Protocol.
 
-### Using uv
-```bash
-uv add authentik-mcp
-```
+### Configuration
 
-## Usage
-
-### Command Line
-```bash
-authentik-mcp --base-url https://your-authentik-instance.com --token your-api-token
-```
-
-### Configuration Options
-- `--base-url`: Base URL of your Authentik instance (required)
-- `--token`: Authentik API token (required)
-- `--no-verify-ssl`: Disable SSL certificate verification
+The server requires the following configuration parameters:
+- `base-url`: Base URL of your Authentik instance (required)
+- `token`: Authentik API token (required)
+- `verify-ssl`: Enable/disable SSL certificate verification (optional, default: true)
 
 ### Environment Variables
-You can also set configuration via environment variables:
-```bash
-export AUTHENTIK_BASE_URL=https://your-authentik-instance.com
-export AUTHENTIK_TOKEN=your-api-token
-```
+You can also configure the server using environment variables:
+- `AUTHENTIK_BASE_URL`: Base URL of your Authentik instance
+- `AUTHENTIK_TOKEN`: Authentik API token
+- `AUTHENTIK_VERIFY_SSL`: SSL certificate verification (true/false)
 
 ## API Token Setup
 
@@ -161,25 +147,56 @@ group = await authentik_create_group({
 ## Development
 
 ### Local Development
-```bash
-git clone https://github.com/goauthentik/authentik-mcp
-cd authentik-mcp/python/authentik-mcp
-uv sync
-uv run authentik-mcp --base-url http://localhost:9000 --token your-token
+## MCP Integration & Usage
+
+This server is designed to be managed by MCP-compatible tools and platforms. It provides a standardized interface for interacting with Authentik instances through the Model Context Protocol.
+
+### Example Configurations
+
+**VS Code / GitHub Copilot Workspace (settings.json):**
+```jsonc
+"mcp": {
+  "servers": {
+    "authentik": {
+      "command": "uvx",
+      "args": [
+        "authentik-mcp",
+        "--base-url", "https://your-authentik-instance",
+        "--token", "your-api-token"
+      ]
+    }
+  }
+}
 ```
 
-### Testing
-```bash
-uv run pytest
+**Claude Desktop (claude_desktop_config.json):**
+```json
+{
+  "mcpServers": {
+    "authentik": {
+      "command": "uvx",
+      "args": [
+        "authentik-mcp",
+        "--base-url",
+        "https://your-authentik-instance",
+        "--token",
+        "your-api-token"
+      ]
+    }
+  }
+}
 ```
 
-### Code Quality
-```bash
-uv run black src/
-uv run isort src/
-uv run ruff check src/
-uv run mypy src/
-```
+### Integration Notes
+- Use `uvx authentik-mcp` for Python versions as shown above
+- For Node.js versions, use `npx @cdmx/authentik-mcp` if you are using the Node.js implementation
+- Let your MCP tool manage the environment and server lifecycle
+- Direct CLI usage is not recommended for most users
+
+## Requirements
+
+- Python 3.10 or higher
+- Valid Authentik API token with appropriate permissions
 
 ## License
 
@@ -194,7 +211,3 @@ MIT License - see LICENSE file for details.
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history and changes.

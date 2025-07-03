@@ -34,19 +34,22 @@ A Model Context Protocol (MCP) server that provides read-only diagnostic and mon
 - Security event analysis
 - Compliance reporting
 
-## Installation
+## MCP Integration
 
-### Using pip
-```bash
-pip install authentik-diag-mcp
-```
+This server is designed to be used with MCP-compatible tools and platforms. It provides a standardized interface for monitoring and diagnosing Authentik instances through the Model Context Protocol.
 
-### Using uv
-```bash
-uv add authentik-diag-mcp
-```
+### Configuration
 
-## Usage
+The server requires the following configuration parameters:
+- `base-url`: Base URL of your Authentik instance (required)
+- `token`: Authentik API token (required)
+- `verify-ssl`: Enable/disable SSL certificate verification (optional, default: true)
+
+### Environment Variables
+You can also configure the server using environment variables:
+- `AUTHENTIK_BASE_URL`: Base URL of your Authentik instance
+- `AUTHENTIK_TOKEN`: Authentik API token
+- `AUTHENTIK_VERIFY_SSL`: SSL certificate verification (true/false)
 
 ### Command Line
 ```bash
@@ -205,28 +208,57 @@ app_status = await authentik_list_applications_status()
 - Monitor access logs
 - Implement rate limiting
 
-## Development
+## MCP Integration & Usage
 
-### Local Development
-```bash
-git clone https://github.com/goauthentik/authentik-diag-mcp
-cd authentik-diag-mcp/python/authentik-diag-mcp
-uv sync
-uv run authentik-diag-mcp --base-url http://localhost:9000 --token your-token
+This server is designed to be managed by MCP-compatible tools and platforms. It provides a standardized interface for monitoring and diagnosing Authentik instances through the Model Context Protocol.
+
+### Example Configurations
+
+**VS Code / GitHub Copilot Workspace (settings.json):**
+```jsonc
+"mcp": {
+  "servers": {
+    "authentik-diag": {
+      "command": "uvx",
+      "args": [
+        "authentik-diag-mcp",
+        "--base-url", "https://your-authentik-instance",
+        "--token", "your-api-token"
+      ]
+    }
+  }
+}
 ```
 
-### Testing
-```bash
-uv run pytest
+**Claude Desktop (claude_desktop_config.json):**
+```json
+{
+  "mcpServers": {
+    "authentik-diag": {
+      "command": "uvx",
+      "args": [
+        "authentik-diag-mcp",
+        "--base-url",
+        "https://your-authentik-instance",
+        "--token",
+        "your-api-token"
+      ]
+    }
+  }
+}
 ```
 
-### Code Quality
-```bash
-uv run black src/
-uv run isort src/
-uv run ruff check src/
-uv run mypy src/
-```
+### Integration Notes
+- Use `uvx authentik-diag-mcp` for Python versions as shown above
+- For Node.js versions, use `npx @cdmx/authentik-diag-mcp` if you are using the Node.js implementation
+- Replace `authentik-diag-mcp` with `authentik-mcp` for full API access if needed
+- Let your MCP tool manage the environment and server lifecycle
+- Direct CLI usage is not recommended for most users
+
+## Requirements
+
+- Python 3.10 or higher
+- Valid Authentik API token with read permissions
 
 ## License
 

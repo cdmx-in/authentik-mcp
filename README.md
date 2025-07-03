@@ -31,7 +31,7 @@ This repository is designed for seamless integration with the Model Context Prot
 
 
 #### Example: VS Code Github Copilot MCP Extension
-**GitHub Copilot Workspace (settings.json):**
+**GitHub Copilot Workspace (settings.json) – Python (uvx):**
 ```jsonc
 "mcp": {
   "servers": {
@@ -46,8 +46,22 @@ This repository is designed for seamless integration with the Model Context Prot
   }
 }
 ```
-**Claude Desktop (claude_desktop_config.json):**
-
+**GitHub Copilot Workspace (settings.json) – Node.js (npx):**
+```jsonc
+"mcp": {
+  "servers": {
+    "authentik": {
+      "command": "npx",
+      "args": [
+        "@cdmx/authentik-diag-mcp",
+        "--base-url", "https://your-authentik-instance",
+        "--token", "your-api-token"
+      ]
+    }
+  }
+}
+```
+**Claude Desktop (claude_desktop_config.json) – Python (uvx):**
 ```json
 {
   "mcpServers": {
@@ -64,10 +78,23 @@ This repository is designed for seamless integration with the Model Context Prot
   }
 }
 ```
-
-- The `uvx` runner ensures the correct Python environment and dependencies are used.
-- Replace `authentik-diag-mcp` with `authentik-mcp` for full API access if needed.
-- No need to run or install via `pip` manually—let your MCP tool manage the environment.
+**Claude Desktop (claude_desktop_config.json) – Node.js (npx):**
+```json
+{
+  "mcpServers": {
+    "authentik": {
+      "command": "npx",
+      "args": [
+        "@cdmx/authentik-diag-mcp",
+        "--base-url",
+        "https://your-authentik-instance",
+        "--token",
+        "your-api-token"
+      ]
+    }
+  }
+}
+```
 
 ## Quick Start
 
@@ -282,12 +309,16 @@ npm run dev -- --base-url http://localhost:9000 --token your-token
 
 ### Python
 
-- Python 3.8 or higher
+- Python 3.10 or higher
 - uv package manager (recommended)
 
 ### Node.js
 
 - Node.js 18.0.0 or higher
+
+### General
+
+- Valid Authentik API token with appropriate permissions
 - npm or yarn
 
 ## Project Structure

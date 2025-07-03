@@ -35,36 +35,22 @@ A Model Context Protocol (MCP) server that provides comprehensive integration wi
 - System health monitoring
 - Configuration management
 
-## Installation
+## MCP Integration
 
-### Using npm
-```bash
-npm install -g authentik-mcp
-```
+This server is designed to be used with MCP-compatible tools and platforms. It provides a standardized interface for interacting with Authentik instances through the Model Context Protocol.
 
-### Using npx (recommended)
-```bash
-npx authentik-mcp --base-url https://your-authentik-instance.com --token your-api-token
-```
+### Configuration
 
-## Usage
-
-### Command Line
-```bash
-authentik-mcp --base-url https://your-authentik-instance.com --token your-api-token
-```
-
-### Configuration Options
-- `--base-url`: Base URL of your Authentik instance (required)
-- `--token`: Authentik API token (required)
-- `--no-verify-ssl`: Disable SSL certificate verification
+The server requires the following configuration parameters:
+- `base-url`: Base URL of your Authentik instance (required)
+- `token`: Authentik API token (required)
+- `verify-ssl`: Enable/disable SSL certificate verification (optional, default: true)
 
 ### Environment Variables
-You can also set configuration via environment variables:
-```bash
-export AUTHENTIK_BASE_URL=https://your-authentik-instance.com
-export AUTHENTIK_TOKEN=your-api-token
-```
+You can also configure the server using environment variables:
+- `AUTHENTIK_BASE_URL`: Base URL of your Authentik instance
+- `AUTHENTIK_TOKEN`: Authentik API token
+- `AUTHENTIK_VERIFY_SSL`: SSL certificate verification (true/false)
 
 ## API Token Setup
 
@@ -113,44 +99,51 @@ export AUTHENTIK_TOKEN=your-api-token
 - `authentik_list_tokens` - List API tokens
 - `authentik_create_token` - Create new API tokens
 
-## Resources
+## MCP Integration & Usage
 
-The server provides access to the following resources:
-- `authentik://users` - User management
-- `authentik://groups` - Group management
-- `authentik://applications` - Application management
-- `authentik://events` - Event monitoring and audit logs
-- `authentik://flows` - Authentication flows
-- `authentik://providers` - Authentication providers
+This server is designed to be managed by MCP-compatible tools and platforms. It provides a standardized interface for interacting with Authentik instances through the Model Context Protocol.
 
-## Example Usage
+### Example Configurations
 
-```typescript
-// Using with an MCP client
-
-// List all users
-const users = await mcpClient.callTool('authentik_list_users', {});
-
-// Create a new user
-const newUser = await mcpClient.callTool('authentik_create_user', {
-  username: 'johndoe',
-  email: 'john@example.com',
-  name: 'John Doe',
-  password: 'secure-password'
-});
-
-// Get recent events
-const events = await mcpClient.callTool('authentik_list_events', {
-  ordering: '-created',
-  page_size: 10
-});
-
-// Create a new group
-const group = await mcpClient.callTool('authentik_create_group', {
-  name: 'Developers',
-  is_superuser: false
-});
+**VS Code / GitHub Copilot Workspace (settings.json):**
+```jsonc
+"mcp": {
+  "servers": {
+    "authentik": {
+      "command": "npx",
+      "args": [
+        "@cdmx/authentik-mcp",
+        "--base-url", "https://your-authentik-instance",
+        "--token", "your-api-token"
+      ]
+    }
+  }
+}
 ```
+
+**Claude Desktop (claude_desktop_config.json):**
+```json
+{
+  "mcpServers": {
+    "authentik": {
+      "command": "npx",
+      "args": [
+        "@cdmx/authentik-mcp",
+        "--base-url",
+        "https://your-authentik-instance",
+        "--token",
+        "your-api-token"
+      ]
+    }
+  }
+}
+```
+
+### Integration Notes
+- Use `npx @cdmx/authentik-mcp` for Node.js versions as shown above
+- For Python versions, use `uvx authentik-mcp` if you are using the Python implementation
+- Let your MCP tool manage the environment and server lifecycle
+- Direct CLI usage is not recommended for most users
 
 ## Security Considerations
 
@@ -159,33 +152,6 @@ const group = await mcpClient.callTool('authentik_create_group', {
 - Use least-privilege principle when creating tokens
 - Monitor API usage through Authentik's audit logs
 - Consider using separate tokens for different environments
-
-## Development
-
-### Local Development
-```bash
-git clone https://github.com/goauthentik/authentik-mcp
-cd authentik-mcp/nodejs/authentik-mcp
-npm install
-npm run dev -- --base-url http://localhost:9000 --token your-token
-```
-
-### Building
-```bash
-npm run build
-```
-
-### Testing
-```bash
-npm test
-```
-
-### Code Quality
-```bash
-npm run lint
-npm run format
-npm run type-check
-```
 
 ## Requirements
 
@@ -205,7 +171,3 @@ MIT License - see LICENSE file for details.
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history and changes.
