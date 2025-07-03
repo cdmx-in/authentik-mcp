@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "authentik-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "MCP server for Authentik API integration with full capabilities"
 authors = [
     {name = "Authentik MCP", email = "hello@goauthentik.io"}
@@ -35,7 +35,7 @@ dev = [
     "black>=23.0.0",
     "isort>=5.12.0",
     "mypy>=1.0.0",
-    "ruff>=0.1.1",
+    "ruff>=0.1.2",
 ]
 
 [project.urls]
