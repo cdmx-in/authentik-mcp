@@ -29,7 +29,7 @@ jobs:
     - name: Test authentik-mcp
       run: |
         cd python/authentik-mcp
-        uv sync
+        uv sync --dev
         uv run pytest || echo "No tests yet"
         uv run ruff check src/
         uv run mypy src/
@@ -37,7 +37,7 @@ jobs:
     - name: Test authentik-diag-mcp
       run: |
         cd python/authentik-diag-mcp
-        uv sync
+        uv sync --dev
         uv run pytest || echo "No tests yet"
         uv run ruff check src/
         uv run mypy src/
@@ -56,6 +56,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: |
+          nodejs/authentik-mcp/package-lock.json
+          nodejs/authentik-diag-mcp/package-lock.json
     
     - name: Test authentik-mcp (Node.js)
       run: |
@@ -92,6 +95,9 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
+        cache-dependency-path: |
+          nodejs/authentik-mcp/package-lock.json
+          nodejs/authentik-diag-mcp/package-lock.json
     
     - name: Build all packages
       run: ./build.sh
