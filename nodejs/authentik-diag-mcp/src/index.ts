@@ -54,10 +54,10 @@ class AuthentikClient {
     });
   }
 
-  async request<T = any>(
+  async request<T = unknown>(
     method: 'GET' | 'HEAD' | 'OPTIONS',
     endpoint: string,
-    params?: any
+    params?: Record<string, unknown>
   ): Promise<T> {
     // Only allow read-only methods for diagnostic mode
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
@@ -71,11 +71,13 @@ class AuthentikClient {
         params,
       });
       return response.data;
-    } catch (error: any) {
-      console.error(`API request failed: ${error.message}`);
-      if (error.response) {
-        console.error(`Status: ${error.response.status}`);
-        console.error(`Data: ${JSON.stringify(error.response.data)}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`API request failed: ${errorMessage}`);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { status: number; data: unknown } };
+        console.error(`Status: ${axiosError.response.status}`);
+        console.error(`Data: ${JSON.stringify(axiosError.response.data)}`);
       }
       throw error;
     }
@@ -152,7 +154,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params;
 
   try {
-    let data: any;
+    let data: unknown;
     switch (uri) {
       case 'authentik://events':
         data = await authentikClient.request('GET', '/events/events/');
@@ -189,8 +191,9 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
         },
       ],
     };
-  } catch (error: any) {
-    throw new Error(`Failed to read resource ${uri}: ${error.message}`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to read resource ${uri}: ${errorMessage}`);
   }
 });
 
@@ -439,9 +442,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   const { name, arguments: args } = request.params;
+  
+  // Ensure args is defined
+  if (!args) {
+    throw new Error('Missing arguments in tool call');
+  }
 
   try {
-    let result: any;
+    let result: unknown;
 
     switch (name) {
       // Event Monitoring Tools
@@ -467,9 +475,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
 
       case 'authentik_get_user_events': {
-        const userEventParams = { username: args.username };
-        if (args.action) userEventParams.action = args.action;
-        if (args.limit) userEventParams.page_size = args.limit;
+        const userEventParams: Record<string, unknown> = { username: args.username };
+        if ('action' in args && args.action) userEventParams.action = args.action;
+        if ('limit' in args && args.limit) userEventParams.page_size = args.limit;
         result = await authentikClient.request('GET', '/events/events/', userEventParams);
         break;
       }
@@ -485,7 +493,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'authentik_get_group_members': {
         const groupData = await authentikClient.request('GET', `/core/groups/${args.group_id}/`);
-        result = { members: groupData.users_obj || [] };
+        const typedGroupData = groupData as { users_obj?: unknown[] };
+        result = { members: typedGroupData.users_obj || [] };
         break;
       }
 
@@ -515,9 +524,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'authentik_get_version_info':
         try {
           const configData = await authentikClient.request('GET', '/root/config/');
+          const typedConfigData = configData as { version?: string; build_hash?: string };
           result = {
-            version: configData.version || 'unknown',
-            build_hash: configData.build_hash || 'unknown',
+            version: typedConfigData.version || 'unknown',
+            build_hash: typedConfigData.build_hash || 'unknown',
           };
         } catch (error) {
           result = { error: 'Version information not accessible' };
@@ -545,13 +555,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         },
       ],
     };
-  } catch (error: any) {
-    console.error(`Tool call failed: ${error.message}`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Tool call failed: ${errorMessage}`);
     return {
       content: [
         {
           type: 'text',
-          text: `Error: ${error.message}`,
+          text: `Error: ${errorMessage}`,
         },
       ],
       isError: true,
@@ -587,8 +598,9 @@ async function main() {
     // Test connection
     await authentikClient.request('GET', '/root/config/');
     console.error('Successfully connected to Authentik API (diagnostic mode)');
-  } catch (error: any) {
-    console.error(`Failed to connect to Authentik API: ${error.message}`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Failed to connect to Authentik API: ${errorMessage}`);
     process.exit(1);
   }
 
